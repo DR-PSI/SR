@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Request Tracking - MAXIMO</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f7fa;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 32px 24px;
+            border-bottom: 4px solid #FF8C42;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+
+        /* Stats Grid */
+        .stats-section {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 20px 24px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .stat-card {
+            padding: 16px;
+            border-radius: 8px;
+            background: #f0f0f0;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 8px 0 4px 0;
+            color: #2c3e50;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .stat-card.new .stat-number { color: #FF8C42; }
+        .stat-card.queued .stat-number { color: #FFC857; }
+        .stat-card.inprog .stat-number { color: #4A90E2; }
+        .stat-card.cancelled .stat-number { color: #E84C3D; }
+        .stat-card.closed .stat-number { color: #95A5A6; }
+
+        /* Controls */
+        .controls-section {
+            background: white;
+            border-bottom: 1px solid #e0e0e0;
+            padding: 20px 24px;
+        }
+
+        .controls-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .search-box {
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 12px 10px 40px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #4A90E2;
+            box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #999;
+            font-size: 16px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-icon {
+            color: #666;
+            margin-right: 8px;
+            font-size: 16px;
+        }
+
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: #f0f0f0;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #333;
+        }
+
+        .filter-btn:hover {
+            background: #e0e0e0;
+        }
+
+        .filter-btn.active {
+            background: #2c3e50;
+            color: white;
+            border-color: #2c3e50;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 24px;
+        }
+
+        /* Table */
+        .table-wrapper {
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            max-width: 1400px;
+            margin: 0 auto 16px;
+        }
+
+        .table-scroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f5f5f5;
+            padding: 16px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 700;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        td {
+            padding: 14px 16px;
+            font-size: 13px;
+            color: #555;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        tbody tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .sr-id {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .failure-code {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #777;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .status-new {
+            background: #FFE8D6;
+            color: #C2631F;
+        }
+
+        .status-queued {
+            background: #FFF9E6;
+            color: #998800;
+        }
+
+        .status-inprog {
+            background: #E8F2FF;
+            color: #003D99;
+        }
+
+        .status-cancelled {
+            background: #FFE8E8;
+            color: #992626;
+        }
+
+        .status-closed {
+            background: #E8E8E8;
+            color: #665959;
+        }
+
+        /* Footer */
+        .footer {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 12px 16px;
+            background: white;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        /* No Results */
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                gap: 8px;
+            }
+
+            .filter-buttons {
+                gap: 6px;
+            }
+
+            .filter-btn {
+                padding: 6px 12px;
+                font-size: 11px;
+            }
+
+            th, td {
+                padding: 10px;
+                font-size: 12px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="container">
+            <h1>Service Request Tracking</h1>
+            <p>MAXIMO System - ระบบติดตามงาน SR</p>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-section">
+        <div class="container">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalCount">10</div>
+                    <div class="stat-label">Total SR</div>
+                </div>
+                <div class="stat-card new">
+                    <div class="stat-number" id="newCount">2</div>
+                    <div class="stat-label">New</div>
+                </div>
+                <div class="stat-card queued">
+                    <div class="stat-number" id="queuedCount">3</div>
+                    <div class="stat-label">Queued</div>
+                </div>
+                <div class="stat-card inprog">
+                    <div class="stat-number" id="inprogCount">3</div>
+                    <div class="stat-label">In Progress</div>
+                </div>
+                <div class="stat-card cancelled">
+                    <div class="stat-number" id="cancelledCount">1</div>
+                    <div class="stat-label">Cancelled</div>
+                </div>
+                <div class="stat-card closed">
+                    <div class="stat-number" id="closedCount">1</div>
+                    <div class="stat-label">Closed</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls-section">
+        <div class="controls-content">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="ค้นหา SR ID, Summary, Failure Code..."
+                    onkeyup="updateTable()"
+                >
+            </div>
+            <div class="filter-buttons">
+                <span class="filter-icon">⚙️</span>
+                <button class="filter-btn active" onclick="filterByStatus('ALL')">ทั้งหมด</button>
+                <button class="filter-btn" onclick="filterByStatus('NEW')">NEW</button>
+                <button class="filter-btn" onclick="filterByStatus('QUEUED')">QUEUED</button>
+                <button class="filter-btn" onclick="filterByStatus('INPROG')">INPROG</button>
+                <button class="filter-btn" onclick="filterByStatus('CANCELLED')">CANCELLED / REJECTED</button>
+                <button class="filter-btn" onclick="filterByStatus('CLOSED')">CLOSED</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="table-wrapper">
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Service Request</th>
+                            <th>Summary / สรุป</th>
+                            <th>Failure Code</th>
+                            <th style="text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Rows will be inserted by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span id="footerText">แสดง 10 รายการ จากทั้งหมด 10 Service Request</span>
+        </div>
+    </div>
+
+    <script>
+        // Data
+        const srData = [
+            {
+                id: 'SR231000005',
+                summary: 'แกไขชิวร์ฟีปรับ Tap ของหม้อแล่งแปลง TS2',
+                code: 'M3-TR2',
+                status: 'INPROG'
+            },
+            {
+                id: 'SR231000010',
+                summary: 'แกไขชิวลดลม',
+                code: 'WL',
+                status: 'QUEUED'
+            },
+            {
+                id: 'SR231000011',
+                summary: 'ผ่าส Capacitor-Bank ข่าวสล สดย.ชลสินหร',
+                code: 'NCN',
+                status: 'NEW'
+            },
+            {
+                id: 'SR231000014',
+                summary: 'แกไขชิวร์ฟีจดปรับ tap ของหม้อแล่งแปลง TS.2',
+                code: 'M3',
+                status: 'CLOSED'
+            },
+            {
+                id: 'SR231000018',
+                summary: 'แกไขไปเสิ่น Capacitor Bank C2B',
+                code: 'KSK',
+                status: 'CANCELLED'
+            },
+            {
+                id: 'SR231000019',
+                summary: 'แกไขชิวร์ฟี หม้อแล่งแปลง Pad mounted 2',
+                code: '5B',
+                status: 'NEW'
+            },
+            {
+                id: 'SR231000034',
+                summary: 'LN443 Low gas',
+                code: 'LN-MV4',
+                status: 'INPROG'
+            },
+            {
+                id: 'SR231000038',
+                summary: 'หมแลด OLTC ไม่ทำงาน',
+                code: 'WL-TR2',
+                status: 'QUEUED'
+            },
+            {
+                id: 'SR231000046',
+                summary: 'PP6012 มี Alarm CB Block Close & Trip',
+                code: 'PP-HV6-4012',
+                status: 'INPROG'
+            },
+            {
+                id: 'SR231000051',
+                summary: 'battery low',
+                code: 'LPT692A',
+                status: 'QUEUED'
+            }
+        ];
+
+        let currentFilter = 'ALL';
+
+        // Get status label
+        function getStatusLabel(status) {
+            const labels = {
+                'NEW': 'NEW',
+                'QUEUED': 'QUEUED',
+                'INPROG': 'INPROG',
+                'CANCELLED': 'CANCELLED / REJECTED',
+                'CLOSED': 'CLOSED'
+            };
+            return labels[status] || status;
+        }
+
+        // Get status badge class
+        function getStatusClass(status) {
+            return 'status-' + status.toLowerCase();
+        }
+
+        // Filter by status
+        function filterByStatus(status) {
+            currentFilter = status;
+            updateTable();
+
+            // Update button styles
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Update table
+        function updateTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const tableBody = document.getElementById('tableBody');
+
+            // Filter data
+            const filtered = srData.filter(item => {
+                const matchStatus = currentFilter === 'ALL' || item.status === currentFilter;
+                const matchSearch = 
+                    item.id.toLowerCase().includes(searchTerm) ||
+                    item.summary.toLowerCase().includes(searchTerm) ||
+                    item.code.toLowerCase().includes(searchTerm);
+                return matchStatus && matchSearch;
+            });
+
+            // Build table rows
+            if (filtered.length > 0) {
+                tableBody.innerHTML = filtered.map(item => `
+                    <tr>
+                        <td class="sr-id">${item.id}</td>
+                        <td>${item.summary}</td>
+                        <td class="failure-code">${item.code}</td>
+                        <td style="text-align: center;">
+                            <span class="status-badge ${getStatusClass(item.status)}">
+                                ${getStatusLabel(item.status)}
+                            </span>
+                        </td>
+                    </tr>
+                `).join('');
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="4" class="no-results">ไม่พบข้อมูล / No results found</td></tr>';
+            }
+
+            // Update footer
+            document.getElementById('footerText').textContent = 
+                `แสดง ${filtered.length} รายการ จากทั้งหมด ${srData.length} Service Request`;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTable();
+        });
+    </script>
+</body>
+</html>
